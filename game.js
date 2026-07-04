@@ -1,28 +1,62 @@
-// =============================================
-// Space Empire - Core Game
-// =============================================
-
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-let currentScreen = 'mainMenu';
-let gameData = {
-    resources: { credits: 500, research: 120 },
-    ships: [],
-    crew: [],
-    planets: [],
-    researched: []
-};
 
-// Simple star background
+let currentScreen = 'galaxy';
+
 function drawBackground() {
     ctx.fillStyle = '#000411';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
+    // Stars background
     ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < 80; i++) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        ctx.fillRect(x, y, 1.5, 1.5);
+    for (let i = 0; i < 120; i++) {
+        ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1.5, 1.5);
+    }
+}
+
+function renderGalaxy() {
+    drawBackground();
+    ctx.strokeStyle = '#0f0';
+    ctx.lineWidth = 2;
+
+    // Stars
+    const stars = [
+        {x: 150, y: 150, name: "Sol"},
+        {x: 420, y: 120, name: "Alpha Centauri"},
+        {x: 650, y: 200, name: "Sirius"},
+        {x: 280, y: 380, name: "Proxima"},
+        {x: 580, y: 420, name: "Vega"},
+        {x: 180, y: 280, name: "Tau Ceti"}
+    ];
+
+    // Connections
+    ctx.beginPath();
+    ctx.moveTo(stars[0].x, stars[0].y);
+    ctx.lineTo(stars[1].x, stars[1].y);
+    ctx.lineTo(stars[2].x, stars[2].y);
+    ctx.lineTo(stars[4].x, stars[4].y);
+    ctx.lineTo(stars[3].x, stars[3].y);
+    ctx.stroke();
+
+    // Draw stars
+    stars.forEach(star => {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, 18, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.fillStyle = '#0f0';
+        ctx.font = '16px monospace';
+        ctx.fillText(star.name, star.x - 40, star.y - 25);
+    });
+}
+
+function changeScreen(screen) {
+    currentScreen = screen;
+    render();
+}
+
+function render() {
+    if (currentScreen === 'galaxy') {
+        renderGalaxy();
     }
 }
 
@@ -31,144 +65,8 @@ canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    handleClick(x, y);
+    console.log(`Klick auf Galaxy Map bei ${x}, ${y}`);
+    document.getElementById('info').innerHTML = `Stern angeklickt bei ${Math.round(x)}, ${Math.round(y)}<br><small>→ System-View wird später geöffnet</small>`;
 });
 
-function handleClick(x, y) {
-    // Will be implemented per screen
-    console.log(`Click at ${x}, ${y} on screen ${currentScreen}`);
-    if (currentScreen === 'mainMenu') {
-        if (y > 200 && y < 280) changeScreen('setup');
-    }
-}
-
-function changeScreen(screen) {
-    currentScreen = screen;
-    document.getElementById('current-screen').textContent = getScreenName(screen);
-    render();
-}
-
-function getScreenName(screen) {
-    const names = {
-        mainMenu: 'Hauptmenü',
-        setup: 'Spiel-Setup',
-        galaxy: 'Galaxiekarte',
-        system: 'Sternensystem',
-        planet: 'Planetenoberfläche',
-        research: 'Forschung',
-        crew: 'Crew-Management',
-        ship: 'Schiff-Konfiguration',
-        fleet: 'Flotte'
-    };
-    return names[screen] || screen;
-}
-
-// Main render loop
-function render() {
-    drawBackground();
-    ctx.strokeStyle = '#0f0';
-    ctx.lineWidth = 2;
-
-    if (currentScreen === 'mainMenu') {
-        renderMainMenu();
-    } else if (currentScreen === 'setup') {
-        renderSetup();
-    } else if (currentScreen === 'galaxy') {
-        renderGalaxy();
-    } else {
-        ctx.fillStyle = '#0f0';
-        ctx.font = '24px monospace';
-        ctx.fillText(`Bildschirm: ${getScreenName(currentScreen)}`, 50, 100);
-        ctx.fillText('Noch leer - klicke irgendwo', 50, 150);
-    }
-    
-    updateSidePanel();
-}
-
-function renderMainMenu() {
-    ctx.fillStyle = '#0f0';
-    ctx.font = 'bold 48px monospace';
-    ctx.fillText('SPACE EMPIRE', 180, 120);
-    
-    const boxes = [
-        {y: 200, text: 'Neues Spiel', action: () => changeScreen('setup')},
-        {y: 280, text: 'Spiel Laden'},
-        {y: 360, text: 'Einstellungen'},
-        {y: 440, text: 'Bibliothek'},
-        {y: 520, text: 'Beenden'}
-    ];
-    
-    boxes.forEach((box, i) => {
-        ctx.strokeRect(250, box.y, 400, 60);
-        ctx.font = '24px monospace';
-        ctx.fillText(box.text, 340, box.y + 40);
-    });
-}
-
-function renderSetup() {
-    ctx.fillStyle = '#0f0';
-    ctx.font = '28px monospace';
-    ctx.fillText('Neues Spiel - Setup', 50, 80);
-    
-    ctx.fillText('Rasse auswählen:', 100, 180);
-    ctx.strokeRect(100, 200, 200, 80);
-    ctx.fillText('Mensch (Standard)', 130, 250);
-    
-    ctx.fillText('Schwierigkeit:', 500, 180);
-    ctx.strokeRect(500, 200, 250, 60);
-}
-
-function renderGalaxy() {
-    ctx.fillStyle = '#0f0';
-    ctx.font = '24px monospace';
-    ctx.fillText('Galaxiekarte', 50, 60);
-    
-    // Stars
-    for (let i = 0; i < 8; i++) {
-        const x = 150 + (i % 4) * 180;
-        const y = 150 + Math.floor(i / 4) * 180;
-        ctx.beginPath();
-        ctx.arc(x, y, 18, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillText(`S${i+1}`, x-15, y+8);
-    }
-    
-    // Arkaden (connections)
-    ctx.beginPath();
-    ctx.moveTo(168, 168);
-    ctx.lineTo(310, 310);
-    ctx.stroke();
-}
-
-function updateSidePanel() {
-    const panel = document.getElementById('side-buttons');
-    panel.innerHTML = `
-        <button onclick="changeScreen('galaxy')">Galaxiekarte</button>
-        <button onclick="changeScreen('research')">Forschung</button>
-        <button onclick="changeScreen('crew')">Crew</button>
-        <button onclick="changeScreen('ship')">Mein Schiff</button>
-        <button onclick="changeScreen('fleet')">Flotte</button>
-        <button onclick="changeScreen('mainMenu')">Hauptmenü</button>
-    `;
-}
-
-// Save / Load
-function saveGame() {
-    localStorage.setItem('spaceEmpireSave', JSON.stringify(gameData));
-    alert('Spiel gespeichert!');
-}
-
-function loadGame() {
-    const saved = localStorage.getItem('spaceEmpireSave');
-    if (saved) {
-        gameData = JSON.parse(saved);
-        alert('Spiel geladen!');
-        render();
-    }
-}
-
-// Start the game
-changeScreen('mainMenu');
-setInterval(() => {
-    if (currentScreen !== 'mainMenu' && currentScreen !== 'setup') render();
-}, 500); // gentle refresh
+render();

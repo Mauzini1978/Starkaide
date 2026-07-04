@@ -2,46 +2,35 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Space Empire - Galaxy Map</title>
+    <title>Space Empire</title>
     <style>
-        body { margin:0; background:#000; color:#0f0; font-family:monospace; overflow:hidden; }
-        #container { display:flex; flex-direction:column; height:100vh; }
-        #header { background:#001100; padding:12px; border-bottom:2px solid #0f0; text-align:center; font-size:20px; }
-        #main { display:flex; flex:1; }
-        #canvas { background:#000411; }
-        #side-left { width:240px; background:#001100; border-right:2px solid #0f0; padding:15px; overflow-y:auto; }
-        #side-right { width:240px; background:#001100; border-left:2px solid #0f0; padding:15px; }
-        #bottom-bar { background:#001100; padding:10px; border-top:2px solid #0f0; text-align:center; font-size:15px; }
-        button { width:100%; margin:8px 0; padding:12px; background:#002200; color:#0f0; border:1px solid #0f0; cursor:pointer; }
-        button:hover { background:#004400; }
+        body { margin:0; background:#000; color:#0f0; font-family:monospace; }
+        #header { background:#001100; padding:15px; text-align:center; border-bottom:3px solid #0f0; font-size:22px; }
+        #main { display:flex; height:calc(100vh - 110px); }
+        #left { width:250px; background:#001100; border-right:2px solid #0f0; padding:15px; overflow-y:auto; }
+        #canvas { background:#000822; }
+        #right { width:250px; background:#001100; border-left:2px solid #0f0; padding:15px; }
+        #bottom { background:#001100; padding:12px; border-top:2px solid #0f0; text-align:center; }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="header">🌌 SPACE EMPIRE — GALAXIE KARTE</div>
-        <div id="main">
-            <div id="side-left">
-                <h3>Monitore</h3>
-                <button onclick="changeScreen('research')">🔬 Forschung</button>
-                <button onclick="changeScreen('crew')">👥 Crew Management</button>
-                <button onclick="changeScreen('ship')">🚀 Schiff Konfiguration</button>
-                <button onclick="changeScreen('fleet')">⛴ Flotte</button>
-                <button onclick="changeScreen('salon')">🪑 Salon</button>
-                <button onclick="changeScreen('library')">📖 Bibliothek</button>
-                <button onclick="changeScreen('mainMenu')">← Hauptmenü</button>
-            </div>
-            
-            <canvas id="canvas" width="820" height="560"></canvas>
-            
-            <div id="side-right">
-                <h3>Stern Info</h3>
-                <div id="info">Klicke auf einen Stern oder eine Arkade</div>
-            </div>
+    <div id="header">🌌 GALAXIE KARTE</div>
+    <div id="main">
+        <div id="left">
+            <h3>Monitore</h3>
+            <button onclick="alert('Forschung öffnen')">Forschung</button>
+            <button onclick="alert('Crew öffnen')">Crew</button>
+            <button onclick="alert('Schiff öffnen')">Schiff</button>
+            <button onclick="alert('Flotte öffnen')">Flotte</button>
         </div>
-        <div id="bottom-bar">
-            Credits: <span id="credits">1240</span> | Forschung: <span id="research">85</span> | 
-            Runde: <span id="round">7</span> | Sternzeit: 2458.3 | Prestige: 42
+        <canvas id="canvas" width="800" height="500"></canvas>
+        <div id="right">
+            <h3>Info</h3>
+            <p id="info">Klicke auf einen Stern</p>
         </div>
+    </div>
+    <div id="bottom">
+        Credits: 1240 | Forschung: 85 | Runde: 7 | Sternzeit: 2458.3
     </div>
 
     <script src="game.js"></script>

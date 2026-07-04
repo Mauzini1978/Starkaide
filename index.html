@@ -4,33 +4,36 @@
     <meta charset="UTF-8">
     <title>Space Empire</title>
     <style>
-        body { margin:0; background:#000; color:#0f0; font-family:monospace; }
+        body { margin:0; background:#000; color:#0f0; font-family:monospace; overflow:hidden; }
         #header { background:#001100; padding:15px; text-align:center; border-bottom:3px solid #0f0; font-size:22px; }
-        #main { display:flex; height:calc(100vh - 110px); }
-        #left { width:250px; background:#001100; border-right:2px solid #0f0; padding:15px; overflow-y:auto; }
-        #canvas { background:#000822; }
-        #right { width:250px; background:#001100; border-left:2px solid #0f0; padding:15px; }
-        #bottom { background:#001100; padding:12px; border-top:2px solid #0f0; text-align:center; }
+        #main { display:flex; height:calc(100vh - 120px); }
+        #left { width:260px; background:#001100; border-right:2px solid #0f0; padding:15px; overflow-y:auto; }
+        canvas { background:#000411; }
+        #right { width:260px; background:#001100; border-left:2px solid #0f0; padding:15px; }
+        #bottom { background:#001100; padding:12px; border-top:2px solid #0f0; text-align:center; font-size:15px; }
+        button { display:block; width:100%; margin:8px 0; padding:12px; background:#002200; color:#0f0; border:1px solid #0f0; }
     </style>
 </head>
 <body>
-    <div id="header">🌌 GALAXIE KARTE</div>
+    <div id="header">🌌 SPACE EMPIRE — GALAXIE</div>
     <div id="main">
         <div id="left">
             <h3>Monitore</h3>
-            <button onclick="alert('Forschung öffnen')">Forschung</button>
-            <button onclick="alert('Crew öffnen')">Crew</button>
-            <button onclick="alert('Schiff öffnen')">Schiff</button>
-            <button onclick="alert('Flotte öffnen')">Flotte</button>
+            <button onclick="alert('Forschung')">🔬 Forschung</button>
+            <button onclick="alert('Crew')">👥 Crew</button>
+            <button onclick="alert('Schiff')">🚀 Schiff</button>
+            <button onclick="alert('Flotte')">⛴ Flotte</button>
+            <button onclick="alert('Salon')">🪑 Salon</button>
+            <button onclick="alert('Bibliothek')">📖 Bibliothek</button>
         </div>
-        <canvas id="canvas" width="800" height="500"></canvas>
+        <canvas id="canvas" width="780" height="520"></canvas>
         <div id="right">
-            <h3>Info</h3>
-            <p id="info">Klicke auf einen Stern</p>
+            <h3>Stern Info</h3>
+            <div id="info">Klicke auf einen Stern</div>
         </div>
     </div>
     <div id="bottom">
-        Credits: 1240 | Forschung: 85 | Runde: 7 | Sternzeit: 2458.3
+        Credits: 1240 | Forschung: 85 | Runde: 7 | Sternzeit: 2458.3 | Prestige: 42
     </div>
 
     <script src="game.js"></script>

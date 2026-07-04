@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Empire - Alpha</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: #0f0; 
+            font-family: monospace; 
+            overflow: hidden;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #header {
+            background: #001100;
+            padding: 10px;
+            border-bottom: 2px solid #0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #canvas {
+            background: #000411;
+            display: block;
+            margin: 0 auto;
+            image-rendering: pixelated;
+        }
+        #side-panel {
+            width: 280px;
+            background: #001100;
+            border-left: 2px solid #0f0;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        button {
+            background: #002200;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 8px 12px;
+            margin: 4px 0;
+            cursor: pointer;
+            width: 100%;
+            font-family: monospace;
+        }
+        button:hover { background: #004400; }
+        .box {
+            border: 2px solid #0f0;
+            padding: 15px;
+            margin: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <div>SPACE EMPIRE <span id="current-screen">Hauptmenü</span></div>
+            <div>Ressourcen: <span id="resources">Credits: 500 | Forschung: 120</span></div>
+            <button onclick="saveGame()">Speichern</button>
+            <button onclick="loadGame()">Laden</button>
+        </div>
+        <div style="display: flex; flex: 1;">
+            <canvas id="canvas" width="900" height="600"></canvas>
+            <div id="side-panel">
+                <h3>Navigation</h3>
+                <div id="side-buttons"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

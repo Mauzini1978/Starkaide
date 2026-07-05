@@ -1,0 +1,1977 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Starcaid – Retro Pixel Space Prototype</title>
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --navy:#0a0e1a;
+      --cyan:#00ffcc;
+      --gold:#ffcc00;
+      --red:#ff3344;
+      --ink:#d7fff6;
+      --muted:#7ae9d6;
+      --panel:#0e1630;
+      --panel2:#0b1328;
+      --grid:#153053;
+      --shadow:rgba(0,0,0,.35);
+      --glow:rgba(0,255,204,.25);
+      --glow2:rgba(255,204,0,.20);
+      --glow3:rgba(255,51,68,.22);
+      --px: 3px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: "Press Start 2P", system-ui, monospace;
+      background: radial-gradient(1200px 800px at 50% 25%, #0d1635 0%, var(--navy) 55%, #05070f 100%);
+      color:var(--ink);
+      overflow:hidden;
+    }
+
+    /* CRT wrapper */
+    .crt{
+      position:relative;
+      width:100%;
+      height:100%;
+      isolation:isolate;
+    }
+    /* Scanlines */
+    .crt::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,0.03) 0px,
+          rgba(255,255,255,0.03) 1px,
+          rgba(0,0,0,0.08) 2px,
+          rgba(0,0,0,0.08) 4px
+        );
+      mix-blend-mode:overlay;
+      opacity:.6;
+      pointer-events:none;
+      z-index:20;
+    }
+    /* Vignette + subtle curvature */
+    .crt::after{
+      content:"";
+      position:absolute;
+      inset:-2%;
+      background:
+        radial-gradient(120% 90% at 50% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,.35) 62%, rgba(0,0,0,.65) 100%);
+      pointer-events:none;
+      z-index:21;
+      filter: blur(0.2px);
+    }
+
+    /* App layout */
+    #app{
+      position:relative;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:18px 18px 14px;
+    }
+
+    header{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex;
+      align-items:baseline;
+      gap:12px;
+      user-select:none;
+    }
+    .logo{
+      color:var(--cyan);
+      letter-spacing:2px;
+      text-shadow: 0 0 10px var(--glow), 0 0 22px rgba(0,255,204,.18);
+      font-size:18px;
+    }
+    .subtitle{
+      color:var(--muted);
+      font-size:10px;
+      opacity:.95;
+    }
+    .topRight{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .chip{
+      font-size:10px;
+      padding:8px 10px;
+      background: linear-gradient(180deg, rgba(0,255,204,.10), rgba(0,255,204,.05));
+      border:1px solid rgba(0,255,204,.22);
+      color:var(--cyan);
+      box-shadow: 0 0 0 2px rgba(0,0,0,.18) inset;
+    }
+    .chip strong{ color:var(--gold); }
+
+    /* Main stage */
+    .stage{
+      position:relative;
+      flex:1;
+      min-height:0;
+      border:1px solid rgba(0,255,204,.18);
+      background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.36));
+      box-shadow:
+        0 0 0 2px rgba(0,0,0,.25) inset,
+        0 16px 40px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+
+    /* Starfield canvas */
+    #bg{
+      position:absolute;
+      inset:0;
+      z-index:0;
+      opacity:.9;
+    }
+
+    /* Screen container */
+    .screen{
+      position:absolute;
+      inset:0;
+      padding:16px;
+      z-index:2;
+      display:none;
+      overflow:auto;
+    }
+    .screen.active{ display:block; }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(10,14,26,.62), rgba(10,14,26,.78));
+      border:1px solid rgba(0,255,204,.18);
+      box-shadow: 0 0 0 2px rgba(0,0,0,.25) inset;
+      padding:14px;
+    }
+    .titleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .titleRow h2{
+      margin:0;
+      font-size:12px;
+      color:var(--gold);
+      text-shadow: 0 0 10px rgba(255,204,0,.18);
+      letter-spacing:1px;
+    }
+    .hint{
+      font-size:9px;
+      color:rgba(215,255,246,.85);
+      opacity:.9;
+      line-height:1.5;
+    }
+
+    /* Buttons */
+    .btnRow{ display:flex; gap:10px; flex-wrap:wrap; }
+    .btn{
+      font-family:inherit;
+      font-size:10px;
+      padding:10px 12px;
+      cursor:pointer;
+      color:var(--cyan);
+      background: linear-gradient(180deg, rgba(0,255,204,.10), rgba(0,255,204,.05));
+      border:1px solid rgba(0,255,204,.22);
+      box-shadow: 0 0 0 2px rgba(0,0,0,.20) inset;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+      user-select:none;
+    }
+    .btn:hover{
+      border-color: rgba(0,255,204,.42);
+      filter: brightness(1.08);
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.gold{
+      color: var(--gold);
+      background: linear-gradient(180deg, rgba(255,204,0,.12), rgba(255,204,0,.06));
+      border-color: rgba(255,204,0,.25);
+    }
+    .btn.red{
+      color: var(--red);
+      background: linear-gradient(180deg, rgba(255,51,68,.14), rgba(255,51,68,.07));
+      border-color: rgba(255,51,68,.28);
+    }
+    .btn.small{ padding:8px 10px; font-size:9px; }
+    .btn:focus-visible{ outline:2px solid rgba(0,255,204,.6); outline-offset:2px; }
+
+    /* Menu grid */
+    .menuGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(200px, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width: 720px){
+      .menuGrid{ grid-template-columns:1fr; }
+    }
+
+    /* HUD bar (bottom) */
+    .hud{
+      position:relative;
+      z-index:3;
+      display:none;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:10px 10px 12px;
+      border:1px solid rgba(0,255,204,.18);
+      background: linear-gradient(180deg, rgba(10,14,26,.55), rgba(10,14,26,.78));
+      box-shadow: 0 0 0 2px rgba(0,0,0,.22) inset;
+    }
+    .hud.visible{ display:flex; }
+    .hud .spacer{ flex:1; }
+    .hud .path{
+      font-size:9px;
+      color:rgba(215,255,246,.8);
+      padding:8px 10px;
+      border:1px dashed rgba(0,255,204,.18);
+      background: rgba(0,0,0,.18);
+      min-width:220px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .kbd{
+      font-size:9px;
+      color:rgba(215,255,246,.85);
+      padding:8px 10px;
+      border:1px solid rgba(255,204,0,.20);
+      background: rgba(255,204,0,.06);
+    }
+
+    /* Grid canvases */
+    .gridWrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    .canvasBox{
+      position:relative;
+      border:1px solid rgba(0,255,204,.18);
+      background: linear-gradient(180deg, rgba(14,22,48,.55), rgba(11,19,40,.65));
+      box-shadow: 0 0 0 2px rgba(0,0,0,.20) inset;
+      overflow:hidden;
+    }
+    canvas.ui{
+      width:100%;
+      height:auto;
+      display:block;
+      image-rendering: pixelated;
+    }
+    .overlayLabel{
+      position:absolute;
+      left:10px;
+      top:10px;
+      font-size:9px;
+      padding:8px 10px;
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(0,255,204,.20);
+      color:rgba(215,255,246,.85);
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+    }
+
+    /* Info panel */
+    .infoGrid{
+      display:grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap:10px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .infoGrid{ grid-template-columns:1fr; }
+    }
+    .log{
+      font-size:9px;
+      line-height:1.55;
+      color:rgba(215,255,246,.85);
+      max-height:240px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .log b{ color: var(--gold); }
+    .log .warn{ color: var(--red); }
+
+    /* Lists */
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:10px;
+    }
+    .listItem{
+      padding:10px 12px;
+      border:1px solid rgba(0,255,204,.18);
+      background: rgba(0,0,0,.18);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .listItem:hover{ border-color: rgba(0,255,204,.38); }
+    .listItem small{ color:rgba(215,255,246,.75); font-size:9px; }
+    .tag{
+      font-size:9px;
+      padding:6px 8px;
+      border:1px solid rgba(255,204,0,.22);
+      background: rgba(255,204,0,.08);
+      color: var(--gold);
+      white-space:nowrap;
+    }
+
+    /* Dialog overlay */
+    .dialogOverlay{
+      position:absolute;
+      inset:0;
+      display:none;
+      z-index:10;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(1px);
+    }
+    .dialogOverlay.visible{ display:block; }
+    .dialogBox{
+      position:absolute;
+      left:50%;
+      top:58%;
+      transform: translate(-50%, -50%);
+      width:min(760px, calc(100% - 24px));
+      border:1px solid rgba(0,255,204,.22);
+      background: linear-gradient(180deg, rgba(10,14,26,.86), rgba(10,14,26,.92));
+      box-shadow: 0 0 0 2px rgba(0,0,0,.25) inset, 0 24px 60px rgba(0,0,0,.65);
+      padding:14px;
+    }
+    .dialogHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .dialogHeader .who{
+      color:var(--gold);
+      font-size:10px;
+      letter-spacing:0.5px;
+    }
+    .dialogText{
+      font-size:9px;
+      line-height:1.65;
+      color:rgba(215,255,246,.9);
+      white-space:pre-wrap;
+      margin:0 0 12px 0;
+    }
+    .dialogChoices{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+    }
+
+    /* Pixelated separators */
+    .sep{
+      height:1px;
+      background: rgba(0,255,204,.18);
+      margin:10px 0;
+    }
+
+    /* Accessibility helpers */
+    .srOnly{
+      position:absolute;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden; clip:rect(0,0,0,0);
+      border:0;
+    }
+  </style>
+</head>
+<body>
+  <div class="crt">
+    <div id="app">
+      <header>
+        <div class="brand">
+          <div class="logo">STARCAID</div>
+          <div class="subtitle">Retro-Pixel-Art Weltraum-Prototyp (Standalone)</div>
+        </div>
+        <div class="topRight">
+          <div class="chip">SEKTOR: <strong id="hudSectorText">—</strong></div>
+          <div class="chip">STERN: <strong id="hudStarText">—</strong></div>
+          <div class="chip">MODUS: <strong id="hudModeText">MENÜ</strong></div>
+        </div>
+      </header>
+
+      <div class="stage" id="stage">
+        <canvas id="bg" aria-hidden="true"></canvas>
+
+        <!-- Screens -->
+        <section class="screen active" id="screen-main" data-screen="main">
+          <div class="panel">
+            <div class="titleRow">
+              <h2>HAUPTMENÜ</h2>
+              <div class="hint">
+                10 Felder • Demo-Navigation • CRT-Scanlines aktiv<br/>
+                Tipp: Starte mit <b>Neues Spiel</b>.
+              </div>
+            </div>
+
+            <div class="menuGrid" id="mainMenuGrid">
+              <!-- Filled by JS -->
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="hint">
+              Steuerung: <b>Pfeiltasten</b> (Sektorkarte), <b>Klick</b> (Sterne/Objekte), <b>ESC</b> (Dialog schließen / Zurück).
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-sector" data-screen="sector">
+          <div class="gridWrap">
+            <div class="panel">
+              <div class="titleRow">
+                <h2>SEKTORKARTE (5×9 • Toroidal / Wrap-Around)</h2>
+                <div class="btnRow">
+                  <button class="btn small" data-action="back">Zurück</button>
+                  <button class="btn small gold" data-action="enterSector">Sektor betreten</button>
+                </div>
+              </div>
+              <div class="hint">
+                Start: Zeile <b>3</b>, Spalte <b>5</b> (1-basiert).<br/>
+                Innere 9 Sektoren (Zeilen 2-4, Spalten 4-6): ~30 Sterne, heller. Außen: dunkler, wenige Sterne.
+              </div>
+            </div>
+
+            <div class="canvasBox">
+              <div class="overlayLabel" id="sectorLabel">SEKTOR —</div>
+              <canvas class="ui" id="sectorCanvas" width="900" height="500"></canvas>
+            </div>
+
+            <div class="infoGrid">
+              <div class="panel">
+                <div class="titleRow">
+                  <h2>LOG</h2>
+                  <div class="hint">Event-Delegation aktiv • zuverlässige Klick-Erkennung</div>
+                </div>
+                <div class="log" id="log"></div>
+              </div>
+
+              <div class="panel">
+                <div class="titleRow">
+                  <h2>KURZSTATUS</h2>
+                </div>
+                <div class="hint" id="sectorStatus">
+                  —
+                </div>
+                <div class="sep"></div>
+                <div class="btnRow">
+                  <button class="btn small" data-action="openSubmenu" data-sub="flagship">Flaggschiff</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="fleet">Flotte</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="crew">Crew & Diplomaten</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="library">Bibliothek</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="resources">Ressourcen</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="research">Forschung</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="salon">Salon</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="missions">Missionen</button>
+                  <button class="btn small" data-action="openSubmenu" data-sub="save">Speichern/Settings</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-stars" data-screen="stars">
+          <div class="gridWrap">
+            <div class="panel">
+              <div class="titleRow">
+                <h2>STERNENKARTE</h2>
+                <div class="btnRow">
+                  <button class="btn small" data-action="back">Zurück</button>
+                </div>
+              </div>
+              <div class="hint">Sterne als klickbare Punkte • Verbindungslinien als Arkaden (Bögen). Klick auf Stern → Sonnensystem.</div>
+            </div>
+
+            <div class="canvasBox">
+              <div class="overlayLabel" id="starsLabel">SEKTOR —</div>
+              <canvas class="ui" id="starsCanvas" width="900" height="500"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-system" data-screen="system">
+          <div class="gridWrap">
+            <div class="panel">
+              <div class="titleRow">
+                <h2>SONNENSYSTEM (9×17 Raster)</h2>
+                <div class="btnRow">
+                  <button class="btn small" data-action="back">Zurück</button>
+                </div>
+              </div>
+              <div class="hint">Sonne in der Mitte (9 Felder). Planeten/Stationen/Asteroiden sind klickbar.</div>
+            </div>
+
+            <div class="canvasBox">
+              <div class="overlayLabel" id="systemLabel">SYSTEM —</div>
+              <canvas class="ui" id="systemCanvas" width="900" height="500"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-planet" data-screen="planet">
+          <div class="gridWrap">
+            <div class="panel">
+              <div class="titleRow">
+                <h2>PLANETENANSICHT (Mercator-Oval • ~9×17 Regionen)</h2>
+                <div class="btnRow">
+                  <button class="btn small" data-action="back">Zurück</button>
+                </div>
+              </div>
+              <div class="hint">Klickbare Regionen (Oval-Maske). Klick → Regionansicht.</div>
+            </div>
+
+            <div class="canvasBox">
+              <div class="overlayLabel" id="planetLabel">PLANET —</div>
+              <canvas class="ui" id="planetCanvas" width="900" height="500"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-region" data-screen="region">
+          <div class="gridWrap">
+            <div class="panel">
+              <div class="titleRow">
+                <h2>REGIONANSICHT (9×17 Raster)</h2>
+                <div class="btnRow">
+                  <button class="btn small" data-action="back">Zurück</button>
+                </div>
+              </div>
+              <div class="hint">Klickbare Felder (Gebäude/Orte). Klick → Raumansicht (Point & Click).</div>
+            </div>
+
+            <div class="canvasBox">
+              <div class="overlayLabel" id="regionLabel">REGION —</div>
+              <canvas class="ui" id="regionCanvas" width="900" height="500"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-room" data-screen="room">
+          <div class="gridWrap">
+            <div class="panel">
+              <div class="titleRow">
+                <h2>RAUMANSICHT (Point & Click)</h2>
+                <div class="btnRow">
+                  <button class="btn small" data-action="back">Zurück</button>
+                </div>
+              </div>
+              <div class="hint">Anklickbare Personen & Objekte • Dialog-Overlay bei Klick auf Person.</div>
+            </div>
+
+            <div class="canvasBox">
+              <div class="overlayLabel" id="roomLabel">SZENE —</div>
+              <canvas class="ui" id="roomCanvas" width="900" height="500"></canvas>
+
+              <div class="dialogOverlay" id="dialogOverlay" role="dialog" aria-modal="true" aria-labelledby="dialogWho">
+                <div class="dialogBox">
+                  <div class="dialogHeader">
+                    <div class="who" id="dialogWho">—</div>
+                    <button class="btn small red" data-action="closeDialog">ESC / Schließen</button>
+                  </div>
+                  <p class="dialogText" id="dialogText"></p>
+                  <div class="dialogChoices" id="dialogChoices"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Submenus -->
+        <section class="screen" id="screen-submenu" data-screen="submenu">
+          <div class="panel">
+            <div class="titleRow">
+              <h2 id="subTitle">UNTERMENÜ</h2>
+              <div class="btnRow">
+                <button class="btn small" data-action="back">Zurück</button>
+              </div>
+            </div>
+            <div class="hint" id="subHint">—</div>
+
+            <div id="subBody" class="list"></div>
+          </div>
+        </section>
+      </div>
+
+      <nav class="hud" id="hud">
+        <button class="btn small" data-action="back">Zurück</button>
+        <button class="btn small" data-action="forward">Vorwärts</button>
+        <div class="spacer"></div>
+        <div class="path" id="pathText">PFAD: MENÜ</div>
+        <div class="kbd">PFEILE: SEKTOR • ENTER: BETRETEN • ESC: ZURÜCK/DIALOG</div>
+      </nav>
+    </div>
+  </div>
+
+  <script>
+  (()=>{
+    "use strict";
+
+    /* =========================
+       Utilities
+    ========================= */
+    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+    const wrap=(v,mod)=>((v%mod)+mod)%mod;
+    const rnd=(a=0,b=1)=>a+Math.random()*(b-a);
+    const rndi=(a,b)=>Math.floor(rnd(a,b+1));
+    const choice=(arr)=>arr[Math.floor(Math.random()*arr.length)];
+    const now=()=>performance.now();
+
+    function mulberry32(seed){
+      let t = seed >>> 0;
+      return function(){
+        t += 0x6D2B79F5;
+        let x = t;
+        x = Math.imul(x ^ (x >>> 15), x | 1);
+        x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+      }
+    }
+    function seeded(seed){
+      const r = mulberry32(seed);
+      return {
+        f: ()=>r(),
+        i: (a,b)=>Math.floor(a + r()*(b-a+1)),
+        p: (p)=>r()<p,
+      };
+    }
+
+    function el(id){ return document.getElementById(id); }
+    function qs(sel,root=document){ return root.querySelector(sel); }
+    function qsa(sel,root=document){ return Array.from(root.querySelectorAll(sel)); }
+
+    /* =========================
+       State / Router
+    ========================= */
+    const screens = {
+      main: el("screen-main"),
+      sector: el("screen-sector"),
+      stars: el("screen-stars"),
+      system: el("screen-system"),
+      planet: el("screen-planet"),
+      region: el("screen-region"),
+      room: el("screen-room"),
+      submenu: el("screen-submenu"),
+    };
+
+    const hud = el("hud");
+    const pathText = el("pathText");
+    const hudSectorText = el("hudSectorText");
+    const hudStarText = el("hudStarText");
+    const hudModeText = el("hudModeText");
+
+    const logEl = el("log");
+    const sectorStatus = el("sectorStatus");
+
+    const state = {
+      screen: "main",
+      history: [],
+      future: [],
+
+      sector: { r:2, c:4 }, // 0-based => row 3 col 5 (1-based)
+      selectedStarId: null,
+      selectedStarName: "—",
+      systemObject: null,
+      planetRegion: null,
+      regionCell: null,
+
+      sectorData: new Map(), // key "r,c" => {stars:[{x,y,mag,name,id}], bright:boolean}
+      roomEntities: [],
+    };
+
+    function pushScreen(next){
+      if(state.screen === next) return;
+      state.history.push({...snapshotForNav()});
+      state.future.length = 0;
+      setScreen(next, false);
+    }
+    function snapshotForNav(){
+      return {
+        screen: state.screen,
+        sector: {...state.sector},
+        selectedStarId: state.selectedStarId,
+        selectedStarName: state.selectedStarName,
+        systemObject: state.systemObject,
+        planetRegion: state.planetRegion,
+        regionCell: state.regionCell,
+      };
+    }
+    function restoreSnap(snap){
+      state.screen = snap.screen;
+      state.sector = {...snap.sector};
+      state.selectedStarId = snap.selectedStarId;
+      state.selectedStarName = snap.selectedStarName;
+      state.systemObject = snap.systemObject;
+      state.planetRegion = snap.planetRegion;
+      state.regionCell = snap.regionCell;
+      setScreen(state.screen, true);
+    }
+
+    function back(){
+      const prev = state.history.pop();
+      if(!prev) return;
+      state.future.push({...snapshotForNav()});
+      restoreSnap(prev);
+      log(`Zurück → <b>${screenLabel(state.screen)}</b>`);
+    }
+    function forward(){
+      const nxt = state.future.pop();
+      if(!nxt) return;
+      state.history.push({...snapshotForNav()});
+      restoreSnap(nxt);
+      log(`Vorwärts → <b>${screenLabel(state.screen)}</b>`);
+    }
+
+    function setScreen(name, isRestore){
+      Object.values(screens).forEach(s=>s.classList.remove("active"));
+      screens[name].classList.add("active");
+      state.screen = name;
+
+      // HUD visibility: bottom bar visible from sector onwards
+      hud.classList.toggle("visible", name !== "main");
+      hudModeText.textContent = name === "main" ? "MENÜ" : name.toUpperCase();
+
+      updatePath();
+      updateHudBadges();
+
+      // render on enter
+      if(!isRestore) state.future.length = 0;
+      renderAll();
+    }
+
+    function screenLabel(name){
+      return {
+        main:"Hauptmenü",
+        sector:"Sektorkarte",
+        stars:"Sternenkarte",
+        system:"Sonnensystem",
+        planet:"Planet",
+        region:"Region",
+        room:"Raumansicht",
+        submenu:"Untermenü",
+      }[name] || name;
+    }
+
+    function updatePath(){
+      const r = state.sector.r+1, c = state.sector.c+1;
+      let p = `PFAD: ${screenLabel(state.screen).toUpperCase()}`;
+      if(state.screen!=="main"){
+        p += ` • SEKTOR ${r}/${c}`;
+      }
+      if(state.selectedStarName && state.selectedStarName!=="—"){
+        p += ` • ${state.selectedStarName}`;
+      }
+      pathText.textContent = p;
+    }
+
+    function updateHudBadges(){
+      hudSectorText.textContent = `${state.sector.r+1}:${state.sector.c+1}`;
+      hudStarText.textContent = state.selectedStarName || "—";
+    }
+
+    /* =========================
+       Logging
+    ========================= */
+    function log(msg){
+      const t = new Date().toLocaleTimeString();
+      const line = `<div><span style="color:rgba(215,255,246,.65)">${t}</span> • ${msg}</div>`;
+      logEl.insertAdjacentHTML("afterbegin", line);
+    }
+
+    /* =========================
+       Main menu (10 fields)
+    ========================= */
+    const mainButtons = [
+      {label:"Neues Spiel", action:"newGame", tone:"gold"},
+      {label:"Laden", action:"load"},
+      {label:"Speichern", action:"saveFromMenu"},
+      {label:"Credits", action:"credits"},
+      {label:"Optionen", action:"options"},
+      {label:"Codex", action:"codex"},
+      {label:"Tutorial", action:"tutorial"},
+      {label:"Prototyp-Demo", action:"demo"},
+      {label:"Galerie", action:"gallery"},
+      {label:"Beenden", action:"quit", tone:"red"},
+    ];
+
+    function buildMainMenu(){
+      const grid = el("mainMenuGrid");
+      grid.innerHTML = "";
+      mainButtons.forEach(b=>{
+        const btn = document.createElement("button");
+        btn.className = `btn ${b.tone||""}`.trim();
+        btn.textContent = b.label;
+        btn.dataset.action = b.action;
+        grid.appendChild(btn);
+      });
+    }
+
+    /* =========================
+       Sector map (5x9 toroidal)
+    ========================= */
+    const sectorCfg = {
+      rows:5,
+      cols:9,
+      innerRows:[1,2,3], // 0-based rows 2-4
+      innerCols:[3,4,5], // 0-based cols 4-6
+    };
+
+    function isInnerSector(r,c){
+      return sectorCfg.innerRows.includes(r) && sectorCfg.innerCols.includes(c);
+    }
+    function sectorKey(r,c){ return `${r},${c}`; }
+
+    function ensureSectorData(r,c){
+      const key = sectorKey(r,c);
+      if(state.sectorData.has(key)) return state.sectorData.get(key);
+
+      // seeded by coordinates to be stable
+      const seed = (r+1)*1000 + (c+1)*7 + 1337;
+      const R = seeded(seed);
+      const bright = isInnerSector(r,c);
+      const starCount = bright ? R.i(26,34) : R.i(3,9);
+
+      const stars = [];
+      for(let i=0;i<starCount;i++){
+        const x = R.f();
+        const y = R.f();
+        const mag = bright ? (0.65 + R.f()*0.35) : (0.25 + R.f()*0.35);
+        const id = `${key}#${i}`;
+        const name = bright ? `AUR-${r+1}${c+1}-${i+1}` : `VX-${r+1}${c+1}-${i+1}`;
+        stars.push({x,y,mag,id,name});
+      }
+
+      const data = { bright, stars };
+      state.sectorData.set(key, data);
+      return data;
+    }
+
+    const sectorCanvas = el("sectorCanvas");
+    const sectorCtx = sectorCanvas.getContext("2d");
+
+    function drawSectorMap(){
+      const w = sectorCanvas.width, h = sectorCanvas.height;
+      sectorCtx.clearRect(0,0,w,h);
+
+      // grid cells
+      const pad = 20;
+      const gw = w - pad*2;
+      const gh = h - pad*2;
+      const cellW = gw / sectorCfg.cols;
+      const cellH = gh / sectorCfg.rows;
+
+      // backdrop
+      sectorCtx.fillStyle = "rgba(0,0,0,.25)";
+      sectorCtx.fillRect(0,0,w,h);
+
+      // draw each sector cell with star hints
+      for(let r=0;r<sectorCfg.rows;r++){
+        for(let c=0;c<sectorCfg.cols;c++){
+          const x = pad + c*cellW;
+          const y = pad + r*cellH;
+          const inner = isInnerSector(r,c);
+          const data = ensureSectorData(r,c);
+
+          // cell background
+          const base = inner ? 0.22 : 0.10;
+          sectorCtx.fillStyle = `rgba(0,255,204,${base})`;
+          sectorCtx.fillRect(x,y,cellW,cellH);
+
+          // border
+          sectorCtx.strokeStyle = inner ? "rgba(0,255,204,.35)" : "rgba(0,255,204,.18)";
+          sectorCtx.lineWidth = 2;
+          sectorCtx.strokeRect(x+1,y+1,cellW-2,cellH-2);
+
+          // star sparkle indicator
+          const starHintCount = inner ? 8 : 2;
+          const seed = (r+1)*1000 + (c+1)*7 + 999;
+          const R = seeded(seed);
+          for(let i=0;i<starHintCount;i++){
+            const sx = x + 8 + R.f()*(cellW-16);
+            const sy = y + 8 + R.f()*(cellH-16);
+            const a = inner ? (0.55 + R.f()*0.35) : (0.18 + R.f()*0.22);
+            sectorCtx.fillStyle = `rgba(255,204,0,${a})`;
+            sectorCtx.fillRect(Math.floor(sx),Math.floor(sy),2,2);
+          }
+
+          // coordinates label (tiny)
+          sectorCtx.fillStyle = inner ? "rgba(215,255,246,.7)" : "rgba(215,255,246,.35)";
+          sectorCtx.font = "10px 'Press Start 2P'";
+          sectorCtx.textBaseline = "top";
+          sectorCtx.fillText(`${r+1}:${c+1}`, x+6, y+6);
+        }
+      }
+
+      // highlight current sector
+      const sr = state.sector.r, sc = state.sector.c;
+      const hx = pad + sc*cellW;
+      const hy = pad + sr*cellH;
+      sectorCtx.strokeStyle = "rgba(255,204,0,.95)";
+      sectorCtx.lineWidth = 4;
+      sectorCtx.strokeRect(hx+2,hy+2,cellW-4,cellH-4);
+
+      // crosshair
+      sectorCtx.strokeStyle = "rgba(255,204,0,.55)";
+      sectorCtx.lineWidth = 2;
+      sectorCtx.beginPath();
+      sectorCtx.moveTo(hx+cellW/2, hy+8);
+      sectorCtx.lineTo(hx+cellW/2, hy+cellH-8);
+      sectorCtx.moveTo(hx+8, hy+cellH/2);
+      sectorCtx.lineTo(hx+cellW-8, hy+cellH/2);
+      sectorCtx.stroke();
+
+      // labels
+      el("sectorLabel").textContent = `SEKTOR ${sr+1}:${sc+1}`;
+
+      // status
+      const data = ensureSectorData(sr,sc);
+      sectorStatus.innerHTML = `Aktueller Sektor: <b>${sr+1}:${sc+1}</b><br>`+
+        `Typ: <b>${data.bright ? "KERNSEKTOR" : "AUSSENRAND"}</b><br>`+
+        `Sterne: <b>${data.stars.length}</b><br>`+
+        `Navigation: toroidal (wrap-around).`;
+    }
+
+    /* =========================
+       Star map (points + arc lines)
+    ========================= */
+    const starsCanvas = el("starsCanvas");
+    const starsCtx = starsCanvas.getContext("2d");
+    let starHitIndex = []; // for click detection
+
+    function drawStarMap(){
+      const w = starsCanvas.width, h = starsCanvas.height;
+      starsCtx.clearRect(0,0,w,h);
+
+      const {r,c} = state.sector;
+      const data = ensureSectorData(r,c);
+      el("starsLabel").textContent = `SEKTOR ${r+1}:${c+1} • ${data.bright ? "KERN" : "RAND"} • ${data.stars.length} STERNE`;
+
+      // background
+      starsCtx.fillStyle = "rgba(0,0,0,.25)";
+      starsCtx.fillRect(0,0,w,h);
+
+      // transform stars to canvas coords
+      const pad = 30;
+      const pts = data.stars.map(s=>({
+        ...s,
+        px: pad + s.x*(w-pad*2),
+        py: pad + s.y*(h-pad*2),
+      }));
+
+      // connections: connect each star to up to 2 nearest neighbors to form "arcade" arcs
+      const links = [];
+      for(let i=0;i<pts.length;i++){
+        const a = pts[i];
+        // brute force nearest
+        const ds = [];
+        for(let j=0;j<pts.length;j++){
+          if(i===j) continue;
+          const b = pts[j];
+          const dx = a.px-b.px, dy=a.py-b.py;
+          ds.push({j, d: dx*dx+dy*dy});
+        }
+        ds.sort((x,y)=>x.d-y.d);
+        const k = data.bright ? 3 : 2;
+        for(let n=0;n<Math.min(k, ds.length);n++){
+          const j = ds[n].j;
+          if(j<i) continue;
+          links.push([i,j]);
+        }
+      }
+
+      // draw arcs
+      starsCtx.lineWidth = 2;
+      starsCtx.strokeStyle = data.bright ? "rgba(0,255,204,.24)" : "rgba(0,255,204,.18)";
+      links.forEach(([i,j])=>{
+        const a = pts[i], b=pts[j];
+        const mx = (a.px+b.px)/2;
+        const my = (a.py+b.py)/2;
+        // arc height based on distance
+        const dx = b.px-a.px, dy=b.py-a.py;
+        const dist = Math.hypot(dx,dy);
+        const nx = -dy/(dist||1), ny = dx/(dist||1);
+        const lift = clamp(dist*0.15, 12, 60) * (data.bright?1.0:0.8);
+        const cx = mx + nx*lift;
+        const cy = my + ny*lift;
+
+        starsCtx.beginPath();
+        starsCtx.moveTo(a.px,a.py);
+        starsCtx.quadraticCurveTo(cx,cy,b.px,b.py);
+        starsCtx.stroke();
+      });
+
+      // draw stars
+      starHitIndex = [];
+      pts.forEach((s,idx)=>{
+        const radius = 2 + s.mag*3;
+        const glow = data.bright ? 0.55 : 0.35;
+        // glow
+        starsCtx.fillStyle = `rgba(255,204,0,${0.12 + glow*s.mag})`;
+        starsCtx.beginPath();
+        starsCtx.arc(s.px,s.py,radius*2.2,0,Math.PI*2);
+        starsCtx.fill();
+        // core
+        starsCtx.fillStyle = data.bright ? `rgba(255,204,0,${0.75*s.mag+0.2})` : `rgba(215,255,246,${0.55*s.mag+0.15})`;
+        starsCtx.beginPath();
+        starsCtx.arc(s.px,s.py,radius,0,Math.PI*2);
+        starsCtx.fill();
+
+        // selected ring
+        if(state.selectedStarId === s.id){
+          starsCtx.strokeStyle = "rgba(255,204,0,.95)";
+          starsCtx.lineWidth = 3;
+          starsCtx.beginPath();
+          starsCtx.arc(s.px,s.py,radius+6,0,Math.PI*2);
+          starsCtx.stroke();
+
+          // label
+          starsCtx.fillStyle = "rgba(255,204,0,.95)";
+          starsCtx.font = "10px 'Press Start 2P'";
+          starsCtx.textBaseline = "bottom";
+          starsCtx.fillText(s.name, clamp(s.px+10, 10, w-200), clamp(s.py-10, 14, h-10));
+        }
+
+        starHitIndex.push({id:s.id, name:s.name, x:s.px, y:s.py, r:radius+6});
+      });
+
+      // helper legend
+      starsCtx.fillStyle = "rgba(215,255,246,.65)";
+      starsCtx.font = "10px 'Press Start 2P'";
+      starsCtx.textBaseline = "top";
+      starsCtx.fillText("Klick: Stern → Sonnensystem", 20, 14);
+    }
+
+    function pickStarAt(canvas, hitList, ev){
+      const rect = canvas.getBoundingClientRect();
+      const x = (ev.clientX - rect.left) * (canvas.width/rect.width);
+      const y = (ev.clientY - rect.top) * (canvas.height/rect.height);
+      for(const h of hitList){
+        const dx=x-h.x, dy=y-h.y;
+        if(dx*dx+dy*dy <= h.r*h.r) return h;
+      }
+      return null;
+    }
+
+    /* =========================
+       System map (9x17)
+    ========================= */
+    const systemCanvas = el("systemCanvas");
+    const systemCtx = systemCanvas.getContext("2d");
+    let sysHit = [];
+
+    function genSystemObjects(){
+      // stable based on selected star id
+      const base = state.selectedStarId ? hashStr(state.selectedStarId) : hashStr(`${state.sector.r},${state.sector.c}`);
+      const R = seeded(base);
+
+      const rows=9, cols=17;
+      const objects = []; // {type, r,c, label}
+      const centerR = Math.floor(rows/2);
+      const centerC = Math.floor(cols/2);
+
+      // sun occupies 3x3 (9 fields) centered
+      for(let dr=-1; dr<=1; dr++){
+        for(let dc=-1; dc<=1; dc++){
+          objects.push({type:"sun", r:centerR+dr, c:centerC+dc, label:"SONNE"});
+        }
+      }
+
+      // place other objects avoiding sun cells
+      const taken = new Set(objects.map(o=>`${o.r},${o.c}`));
+      const place=(type, n)=>{
+        let tries=0;
+        while(n>0 && tries<2000){
+          tries++;
+          const r = R.i(0, rows-1);
+          const c = R.i(0, cols-1);
+          const k = `${r},${c}`;
+          if(taken.has(k)) continue;
+          // avoid immediate adjacency to sun core sometimes
+          const dist = Math.abs(r-centerR)+Math.abs(c-centerC);
+          if(type==="planet" && dist<3) continue;
+          taken.add(k);
+          objects.push({type, r,c, label: type.toUpperCase()});
+          n--;
+        }
+      };
+
+      place("planet", R.i(4,7));
+      place("station", R.i(1,2));
+      place("asteroid", R.i(7,12));
+
+      return {rows, cols, objects};
+    }
+
+    function drawSystem(){
+      const w = systemCanvas.width, h = systemCanvas.height;
+      systemCtx.clearRect(0,0,w,h);
+      systemCtx.fillStyle = "rgba(0,0,0,.25)";
+      systemCtx.fillRect(0,0,w,h);
+
+      const {rows, cols, objects} = genSystemObjects();
+      el("systemLabel").textContent = `SYSTEM • ${state.selectedStarName || "—"}`;
+
+      // grid
+      const pad=22;
+      const gw=w-pad*2, gh=h-pad*2;
+      const cellW = gw/cols;
+      const cellH = gh/rows;
+
+      systemCtx.strokeStyle = "rgba(0,255,204,.14)";
+      systemCtx.lineWidth = 1;
+      for(let c=0;c<=cols;c++){
+        const x = pad + c*cellW;
+        systemCtx.beginPath();
+        systemCtx.moveTo(x,pad);
+        systemCtx.lineTo(x,pad+gh);
+        systemCtx.stroke();
+      }
+      for(let r=0;r<=rows;r++){
+        const y = pad + r*cellH;
+        systemCtx.beginPath();
+        systemCtx.moveTo(pad,y);
+        systemCtx.lineTo(pad+gw,y);
+        systemCtx.stroke();
+      }
+
+      // objects
+      sysHit = [];
+      objects.forEach((o,idx)=>{
+        const x = pad + o.c*cellW;
+        const y = pad + o.r*cellH;
+
+        if(o.type==="sun"){
+          systemCtx.fillStyle = "rgba(255,204,0,.20)";
+          systemCtx.fillRect(x,y,cellW,cellH);
+          systemCtx.fillStyle = "rgba(255,204,0,.78)";
+          systemCtx.fillRect(x+cellW*0.25, y+cellH*0.25, cellW*0.5, cellH*0.5);
+        }else if(o.type==="planet"){
+          systemCtx.fillStyle = "rgba(0,255,204,.18)";
+          systemCtx.fillRect(x,y,cellW,cellH);
+          systemCtx.fillStyle = "rgba(0,255,204,.70)";
+          systemCtx.beginPath();
+          systemCtx.arc(x+cellW/2, y+cellH/2, Math.min(cellW,cellH)*0.30, 0, Math.PI*2);
+          systemCtx.fill();
+
+          systemCtx.strokeStyle = "rgba(255,204,0,.45)";
+          systemCtx.beginPath();
+          systemCtx.ellipse(x+cellW/2, y+cellH/2, Math.min(cellW,cellH)*0.42, Math.min(cellW,cellH)*0.20, 0.4, 0, Math.PI*2);
+          systemCtx.stroke();
+        }else if(o.type==="station"){
+          systemCtx.fillStyle = "rgba(255,51,68,.16)";
+          systemCtx.fillRect(x,y,cellW,cellH);
+          systemCtx.strokeStyle = "rgba(255,51,68,.85)";
+          systemCtx.lineWidth = 2;
+          systemCtx.strokeRect(x+cellW*0.25,y+cellH*0.25,cellW*0.5,cellH*0.5);
+        }else{ // asteroid
+          systemCtx.fillStyle = "rgba(215,255,246,.08)";
+          systemCtx.fillRect(x,y,cellW,cellH);
+          systemCtx.fillStyle = "rgba(215,255,246,.55)";
+          systemCtx.fillRect(x+cellW*0.35,y+cellH*0.40,Math.max(2,cellW*0.18),Math.max(2,cellH*0.12));
+        }
+
+        // hit for click on non-sun objects (sun not interactive here)
+        if(o.type!=="sun"){
+          sysHit.push({idx, type:o.type, r:o.r, c:o.c, x:x, y:y, w:cellW, h:cellH});
+        }
+      });
+
+      // title
+      systemCtx.fillStyle = "rgba(215,255,246,.65)";
+      systemCtx.font = "10px 'Press Start 2P'";
+      systemCtx.textBaseline = "top";
+      systemCtx.fillText("Klick: Planet → Planetansicht • Station/Asteroid → Regionansicht", 20, 14);
+    }
+
+    function pickRectAt(canvas, rects, ev){
+      const rect = canvas.getBoundingClientRect();
+      const x = (ev.clientX - rect.left) * (canvas.width/rect.width);
+      const y = (ev.clientY - rect.top) * (canvas.height/rect.height);
+      for(const r of rects){
+        if(x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h) return r;
+      }
+      return null;
+    }
+
+    /* =========================
+       Planet view (oval mercator-ish mask, 9x17 regions)
+    ========================= */
+    const planetCanvas = el("planetCanvas");
+    const planetCtx = planetCanvas.getContext("2d");
+    let planetHit=[];
+
+    function drawPlanet(){
+      const w = planetCanvas.width, h = planetCanvas.height;
+      planetCtx.clearRect(0,0,w,h);
+      planetCtx.fillStyle="rgba(0,0,0,.25)";
+      planetCtx.fillRect(0,0,w,h);
+
+      const rows=9, cols=17;
+      el("planetLabel").textContent = `PLANET • ${state.systemObject?.type?.toUpperCase() || "—"}`;
+
+      const pad=30;
+      const gw=w-pad*2, gh=h-pad*2;
+      const cellW=gw/cols, cellH=gh/rows;
+      const cx = pad+gw/2, cy=pad+gh/2;
+      const rx = gw*0.48, ry=gh*0.42;
+
+      // draw oval ocean
+      planetCtx.fillStyle="rgba(0,255,204,.06)";
+      planetCtx.beginPath();
+      planetCtx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      planetCtx.fill();
+      planetCtx.strokeStyle="rgba(0,255,204,.22)";
+      planetCtx.lineWidth=3;
+      planetCtx.stroke();
+
+      // region tiles clipped to oval
+      planetCtx.save();
+      planetCtx.beginPath();
+      planetCtx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      planetCtx.clip();
+
+      planetHit=[];
+      const seed = hashStr(`${state.selectedStarId||""}|planet|${state.systemObject?.type||"p"}`);
+      const R = seeded(seed);
+
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const x=pad+c*cellW, y=pad+r*cellH;
+          // simple "mercator" shading
+          const lat = (r/(rows-1))*2-1; // -1..1
+          const shade = 0.10 + (1-Math.abs(lat))*0.10;
+          const noise = (R.f()-0.5)*0.05;
+
+          const land = R.f() < (0.48 + (1-Math.abs(lat))*0.12);
+          const fill = land
+            ? `rgba(255,204,0,${shade+noise+0.06})`
+            : `rgba(0,255,204,${shade+noise+0.04})`;
+          planetCtx.fillStyle = fill;
+          planetCtx.fillRect(x,y,cellW,cellH);
+
+          // grid line
+          planetCtx.strokeStyle="rgba(0,0,0,.18)";
+          planetCtx.lineWidth=1;
+          planetCtx.strokeRect(x,y,cellW,cellH);
+
+          // mark some special regions
+          const special = R.f() < 0.06;
+          if(special){
+            planetCtx.fillStyle="rgba(255,51,68,.65)";
+            planetCtx.fillRect(x+cellW*0.35,y+cellH*0.35,Math.max(2,cellW*0.3),Math.max(2,cellH*0.3));
+          }
+
+          planetHit.push({r,c,x,y,w:cellW,h:cellH, inside:true});
+        }
+      }
+
+      // latitude lines
+      planetCtx.strokeStyle="rgba(215,255,246,.10)";
+      planetCtx.lineWidth=2;
+      for(let r=1;r<rows;r+=2){
+        const y=pad+r*cellH;
+        planetCtx.beginPath();
+        planetCtx.moveTo(pad,y);
+        planetCtx.lineTo(pad+gw,y);
+        planetCtx.stroke();
+      }
+
+      planetCtx.restore();
+
+      // helper text
+      planetCtx.fillStyle = "rgba(215,255,246,.65)";
+      planetCtx.font = "10px 'Press Start 2P'";
+      planetCtx.textBaseline = "top";
+      planetCtx.fillText("Klick: Region → Regionansicht", 20, 14);
+    }
+
+    /* =========================
+       Region view (9x17)
+    ========================= */
+    const regionCanvas = el("regionCanvas");
+    const regionCtx = regionCanvas.getContext("2d");
+    let regionHit=[];
+
+    function drawRegion(){
+      const w=regionCanvas.width, h=regionCanvas.height;
+      regionCtx.clearRect(0,0,w,h);
+      regionCtx.fillStyle="rgba(0,0,0,.25)";
+      regionCtx.fillRect(0,0,w,h);
+
+      const rows=9, cols=17;
+      el("regionLabel").textContent = `REGION • ${state.planetRegion ? `R${state.planetRegion.r+1}C${state.planetRegion.c+1}` : "—"}`;
+
+      const pad=22;
+      const gw=w-pad*2, gh=h-pad*2;
+      const cellW=gw/cols, cellH=gh/rows;
+
+      // draw grid + contents
+      const seed = hashStr(`${state.selectedStarId||""}|region|${state.planetRegion?.r||0},${state.planetRegion?.c||0}`);
+      const R = seeded(seed);
+
+      regionHit=[];
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const x=pad+c*cellW, y=pad+r*cellH;
+
+          const roll = R.f();
+          let type="leer", color="rgba(215,255,246,.08)", glyph="";
+          if(roll < 0.12){ type="gebäude"; color="rgba(255,204,0,.16)"; glyph="B"; }
+          else if(roll < 0.20){ type="ort"; color="rgba(0,255,204,.16)"; glyph="O"; }
+          else if(roll < 0.24){ type="gefahr"; color="rgba(255,51,68,.16)"; glyph="!"; }
+
+          regionCtx.fillStyle=color;
+          regionCtx.fillRect(x,y,cellW,cellH);
+
+          regionCtx.strokeStyle="rgba(0,255,204,.12)";
+          regionCtx.lineWidth=1;
+          regionCtx.strokeRect(x,y,cellW,cellH);
+
+          if(glyph){
+            regionCtx.fillStyle = type==="gefahr" ? "rgba(255,51,68,.9)" : "rgba(255,204,0,.85)";
+            regionCtx.font = "10px 'Press Start 2P'";
+            regionCtx.textAlign="center";
+            regionCtx.textBaseline="middle";
+            regionCtx.fillText(glyph, x+cellW/2, y+cellH/2);
+          }
+
+          regionHit.push({r,c,type,x,y,w:cellW,h:cellH});
+        }
+      }
+
+      // selected cell highlight
+      if(state.regionCell){
+        const {r,c} = state.regionCell;
+        const x=pad+c*cellW, y=pad+r*cellH;
+        regionCtx.strokeStyle="rgba(255,204,0,.95)";
+        regionCtx.lineWidth=3;
+        regionCtx.strokeRect(x+2,y+2,cellW-4,cellH-4);
+      }
+
+      regionCtx.fillStyle = "rgba(215,255,246,.65)";
+      regionCtx.font = "10px 'Press Start 2P'";
+      regionCtx.textAlign="left";
+      regionCtx.textBaseline="top";
+      regionCtx.fillText("Klick: Feld → Raumansicht", 20, 14);
+    }
+
+    /* =========================
+       Room scene (point&click + dialog)
+    ========================= */
+    const roomCanvas = el("roomCanvas");
+    const roomCtx = roomCanvas.getContext("2d");
+    let roomHit=[];
+
+    const dialogOverlay = el("dialogOverlay");
+    const dialogWho = el("dialogWho");
+    const dialogText = el("dialogText");
+    const dialogChoices = el("dialogChoices");
+
+    function genRoomScene(){
+      const seed = hashStr(`${state.selectedStarId||""}|room|${state.regionCell?.r||0},${state.regionCell?.c||0}`);
+      const R = seeded(seed);
+
+      // entities: persons and objects with bounding boxes in normalized coords
+      const persons = [
+        {id:"npc1", name:choice(["Kapitän Rho","Ingenieurin Vale","Diplomat Khe","Pilotin Nyx"]), role:"Person"},
+        {id:"npc2", name:choice(["Händler Sato","Wächterin Orin","Archivist Ion","Mechaniker Pax"]), role:"Person"},
+      ];
+      const objects = [
+        {id:"obj1", name:choice(["Terminal","Kiste","Holo-Projektor","Schalttafel"]), role:"Objekt"},
+        {id:"obj2", name:choice(["Schrank","Sicherheitskonsole","Werkbank","Sensor-Node"]), role:"Objekt"},
+      ];
+
+      const ents = [];
+
+      // place two persons
+      for(let i=0;i<2;i++){
+        const x = 0.18 + i*0.42 + (R.f()-0.5)*0.06;
+        const y = 0.52 + (R.f()-0.5)*0.08;
+        ents.push({ ...persons[i], kind:"person", x,y,w:0.16,h:0.28 });
+      }
+      // place objects
+      for(let i=0;i<2;i++){
+        const x = 0.20 + i*0.48 + (R.f()-0.5)*0.06;
+        const y = 0.68 + (R.f()-0.5)*0.05;
+        ents.push({ ...objects[i], kind:"object", x,y,w:0.18,h:0.18 });
+      }
+
+      state.roomEntities = ents;
+      return ents;
+    }
+
+    function drawRoom(){
+      const w=roomCanvas.width, h=roomCanvas.height;
+      roomCtx.clearRect(0,0,w,h);
+
+      el("roomLabel").textContent = `SZENE • ZELLE ${state.regionCell ? `${state.regionCell.r+1}:${state.regionCell.c+1}` : "—"}`;
+
+      // backdrop (room)
+      roomCtx.fillStyle="rgba(0,0,0,.25)";
+      roomCtx.fillRect(0,0,w,h);
+
+      // floor gradient
+      const g = roomCtx.createLinearGradient(0,h*0.45,0,h);
+      g.addColorStop(0,"rgba(0,255,204,.04)");
+      g.addColorStop(1,"rgba(0,0,0,.45)");
+      roomCtx.fillStyle=g;
+      roomCtx.fillRect(0,h*0.45,w,h*0.55);
+
+      // panel lines
+      roomCtx.strokeStyle="rgba(0,255,204,.12)";
+      roomCtx.lineWidth=2;
+      for(let i=0;i<10;i++){
+        const y = h*0.08 + i*36;
+        roomCtx.beginPath();
+        roomCtx.moveTo(20,y);
+        roomCtx.lineTo(w-20,y);
+        roomCtx.stroke();
+      }
+
+      const ents = genRoomScene();
+      roomHit=[];
+
+      ents.forEach(e=>{
+        const x = e.x*w, y=e.y*h, bw=e.w*w, bh=e.h*h;
+
+        if(e.kind==="person"){
+          // body
+          roomCtx.fillStyle="rgba(255,204,0,.14)";
+          roomCtx.fillRect(x,y,bw,bh);
+          roomCtx.strokeStyle="rgba(255,204,0,.55)";
+          roomCtx.lineWidth=3;
+          roomCtx.strokeRect(x+2,y+2,bw-4,bh-4);
+
+          // head
+          roomCtx.fillStyle="rgba(255,204,0,.55)";
+          roomCtx.fillRect(x+bw*0.28,y+bh*0.10,bw*0.44,bh*0.22);
+
+          // name tag
+          roomCtx.fillStyle="rgba(0,0,0,.35)";
+          roomCtx.fillRect(x,y-22,bw,20);
+          roomCtx.fillStyle="rgba(215,255,246,.85)";
+          roomCtx.font="10px 'Press Start 2P'";
+          roomCtx.textAlign="left";
+          roomCtx.textBaseline="top";
+          roomCtx.fillText(e.name, x+4, y-20);
+        }else{
+          roomCtx.fillStyle="rgba(0,255,204,.12)";
+          roomCtx.fillRect(x,y,bw,bh);
+          roomCtx.strokeStyle="rgba(0,255,204,.45)";
+          roomCtx.lineWidth=3;
+          roomCtx.strokeRect(x+2,y+2,bw-4,bh-4);
+
+          roomCtx.fillStyle="rgba(0,255,204,.45)";
+          roomCtx.fillRect(x+bw*0.18,y+bh*0.25,bw*0.64,bh*0.18);
+
+          roomCtx.fillStyle="rgba(0,0,0,.35)";
+          roomCtx.fillRect(x,y-22,bw,20);
+          roomCtx.fillStyle="rgba(215,255,246,.75)";
+          roomCtx.font="10px 'Press Start 2P'";
+          roomCtx.textAlign="left";
+          roomCtx.textBaseline="top";
+          roomCtx.fillText(e.name, x+4, y-20);
+        }
+
+        roomHit.push({id:e.id, kind:e.kind, name:e.name, x, y, w:bw, h:bh});
+      });
+
+      roomCtx.fillStyle="rgba(215,255,246,.65)";
+      roomCtx.font="10px 'Press Start 2P'";
+      roomCtx.textAlign="left";
+      roomCtx.textBaseline="top";
+      roomCtx.fillText("Klick: Person → Dialog • Objekt → Inspect (Log)", 20, 14);
+    }
+
+    function openDialog(who, text, choices){
+      dialogWho.textContent = who;
+      dialogText.textContent = text;
+      dialogChoices.innerHTML = "";
+      choices.forEach(ch=>{
+        const b=document.createElement("button");
+        b.className = "btn small";
+        b.textContent = ch.label;
+        b.addEventListener("click", ()=>ch.onPick());
+        dialogChoices.appendChild(b);
+      });
+      dialogOverlay.classList.add("visible");
+    }
+    function closeDialog(){
+      dialogOverlay.classList.remove("visible");
+    }
+
+    /* =========================
+       Submenus (bottom navigation)
+    ========================= */
+    const subTitle = el("subTitle");
+    const subHint = el("subHint");
+    const subBody = el("subBody");
+
+    const submenuDefs = {
+      flagship:{
+        title:"FLAGGSCHIFF (Raumübersicht 4×10)",
+        hint:"Übersicht der Hauptbereiche des Flaggschiffs (Platzhalter-UI).",
+        items: ()=>{
+          const rows=4, cols=10;
+          const list=[];
+          for(let r=0;r<rows;r++){
+            for(let c=0;c<cols;c++){
+              list.push({name:`Deck ${r+1} • Sektion ${c+1}`, tag: choice(["BRÜCKE","LABOR","HANGAR","QUARTIERE","REACTOR"])});
+            }
+          }
+          return list.slice(0,18);
+        }
+      },
+      fleet:{
+        title:"FLOTTE (Schiffsliste)",
+        hint:"Schiffseinheiten, Status und Einsatzbereitschaft.",
+        items: ()=>[
+          {name:"SC-01 'AURORA'", tag:"FREGATTE"},
+          {name:"SC-07 'CIRRUS'", tag:"KORVETTE"},
+          {name:"SC-12 'GILDED'", tag:"TRANSPORT"},
+          {name:"SC-19 'EMBER'", tag:"ABFANG"},
+          {name:"SC-22 'HARBOR'", tag:"SUPPORT"},
+        ]
+      },
+      crew:{
+        title:"CREW & DIPLOMATEN (Personalliste)",
+        hint:"Crew-Mitglieder, Diplomaten und Beziehungen (Platzhalterdaten).",
+        items: ()=>[
+          {name:"Kapitän Rho", tag:"KOMMANDO"},
+          {name:"Ingenieurin Vale", tag:"TECH"},
+          {name:"Pilotin Nyx", tag:"FLUG"},
+          {name:"Diplomat Khe", tag:"DIPLOMATIE"},
+          {name:"Medikerin Sol", tag:"MED"},
+          {name:"Sicherheitschef Orin", tag:"SEC"},
+        ]
+      },
+      library:{
+        title:"BIBLIOTHEK (Wissenskategorien)",
+        hint:"Kategorien und Einträge (Navigation-Demo).",
+        items: ()=>[
+          {name:"Sektoren & Kartographie", tag:"KAT"},
+          {name:"Fremde Spezies", tag:"BIO"},
+          {name:"Artefakte", tag:"REL"},
+          {name:"Politik & Fraktionen", tag:"SOC"},
+          {name:"Technologie", tag:"TECH"},
+        ]
+      },
+      resources:{
+        title:"RESSOURCEN (Übersicht + 7 Upgrade-Bereiche)",
+        hint:"Ressourcenpunkte + Upgrade-Zweige (7 Bereiche).",
+        items: ()=>[
+          {name:"Credits: 12.450", tag:"WERT"},
+          {name:"Treibstoff: 68%", tag:"STATUS"},
+          {name:"Vorräte: 41%", tag:"STATUS"},
+          {name:"Upgrade • Antrieb", tag:"UPG"},
+          {name:"Upgrade • Schilde", tag:"UPG"},
+          {name:"Upgrade • Sensorik", tag:"UPG"},
+          {name:"Upgrade • Bewaffnung", tag:"UPG"},
+          {name:"Upgrade • Drohnen", tag:"UPG"},
+          {name:"Upgrade • Kommunikation", tag:"UPG"},
+          {name:"Upgrade • Quartiere", tag:"UPG"},
+        ]
+      },
+      research:{
+        title:"FORSCHUNG (Tech-Tree Branches)",
+        hint:"Forschungszweige als Liste (Platzhalter).",
+        items: ()=>[
+          {name:"Branch: Energie → Plasma-Koppler", tag:"TIER 1"},
+          {name:"Branch: Navigation → Toroid-Karte", tag:"TIER 1"},
+          {name:"Branch: Biotech → Feldmedizin", tag:"TIER 2"},
+          {name:"Branch: Diplomatie → Konsulat-Protokolle", tag:"TIER 2"},
+          {name:"Branch: Waffen → Arc-Laser", tag:"TIER 3"},
+        ]
+      },
+      salon:{
+        title:"SALON (Nachrichten, Aufträge, Konsulate)",
+        hint:"Drei Bereiche: Nachrichten / Aufträge / Konsulate.",
+        items: ()=>[
+          {name:"Nachrichten: 'Kernsektor stabilisiert'", tag:"NEWS"},
+          {name:"Nachrichten: 'Randpiraten gesichtet'", tag:"NEWS"},
+          {name:"Auftrag: 'Konvoi eskortieren'", tag:"JOB"},
+          {name:"Auftrag: 'Sensorboje bergen'", tag:"JOB"},
+          {name:"Konsulat: 'Cyannis-Union'", tag:"DIP"},
+          {name:"Konsulat: 'Gold Meridian'", tag:"DIP"},
+        ]
+      },
+      missions:{
+        title:"MISSIONEN (Liste + klickbare Details)",
+        hint:"Klick auf Eintrag → Detailanzeige (Log).",
+        items: ()=>[
+          {name:"M-014 • Signal aus dem Nebel", tag:"AKTIV"},
+          {name:"M-021 • Der goldene Sprung", tag:"NEU"},
+          {name:"M-033 • Konsulat der Splitter", tag:"OFFEN"},
+          {name:"M-041 • Rettungskapsel", tag:"OFFEN"},
+        ]
+      },
+      save:{
+        title:"SPEICHERN / SETTINGS",
+        hint:"Speicherstände und Einstellungen (Platzhalter).",
+        items: ()=>[
+          {name:"Slot A • 'Kernroute' • 02:14", tag:"SAVE"},
+          {name:"Slot B • 'Randflug' • 00:48", tag:"SAVE"},
+          {name:"Video: CRT Scanlines", tag:"ON"},
+          {name:"Audio: SFX", tag:"ON"},
+          {name:"Steuerung: Pfeile / Enter", tag:"OK"},
+        ]
+      },
+    };
+
+    function openSubmenu(key){
+      const def = submenuDefs[key];
+      if(!def) return;
+
+      subTitle.textContent = def.title;
+      subHint.textContent = def.hint;
+      subBody.innerHTML = "";
+
+      const items = def.items();
+      items.forEach((it, idx)=>{
+        const row = document.createElement("div");
+        row.className="listItem";
+        row.dataset.subitem = key;
+        row.dataset.index = String(idx);
+        row.innerHTML = `<div>${it.name}<br><small>Klick für Details</small></div><div class="tag">${it.tag}</div>`;
+        subBody.appendChild(row);
+      });
+
+      pushScreen("submenu");
+      log(`Untermenü geöffnet: <b>${def.title}</b>`);
+    }
+
+    /* =========================
+       Background starfield
+    ========================= */
+    const bg = el("bg");
+    const bgCtx = bg.getContext("2d");
+
+    let bgStars = [];
+    function resizeBg(){
+      const stage = el("stage");
+      const rect = stage.getBoundingClientRect();
+      bg.width = Math.floor(rect.width * devicePixelRatio);
+      bg.height = Math.floor(rect.height * devicePixelRatio);
+      bg.style.width = rect.width + "px";
+      bg.style.height = rect.height + "px";
+      genBgStars();
+    }
+
+    function genBgStars(){
+      const w=bg.width, h=bg.height;
+      const n = Math.floor((w*h)/70000);
+      const R = seeded(424242);
+      bgStars = new Array(n).fill(0).map(()=>{
+        const x = R.f()*w;
+        const y = R.f()*h;
+        const z = 0.2 + R.f()*0.8;
+        const tw = R.f()*Math.PI*2;
+        return {x,y,z,tw};
+      });
+    }
+
+    function drawBg(t){
+      const w=bg.width, h=bg.height;
+      bgCtx.clearRect(0,0,w,h);
+
+      // slight drift
+      const speed = 0.012 * devicePixelRatio;
+      for(const s of bgStars){
+        s.y += speed*(0.4+s.z);
+        if(s.y>h) s.y -= h;
+        const tw = 0.35 + 0.65*Math.sin((t*0.001)+s.tw);
+        const a = 0.05 + 0.18*s.z*tw;
+        bgCtx.fillStyle = `rgba(255,204,0,${a})`;
+        const size = Math.max(1, Math.floor(1.2*s.z*devicePixelRatio));
+        bgCtx.fillRect(Math.floor(s.x), Math.floor(s.y), size, size);
+      }
+
+      // subtle noise overlay
+      const R = seeded(Math.floor(t/80));
+      bgCtx.fillStyle = `rgba(255,255,255,${0.015})`;
+      for(let i=0;i<70;i++){
+        const x = R.f()*w, y=R.f()*h;
+        bgCtx.fillRect(x,y,1,1);
+      }
+    }
+
+    function loop(t){
+      drawBg(t);
+      requestAnimationFrame(loop);
+    }
+
+    /* =========================
+       Hash helper
+    ========================= */
+    function hashStr(str){
+      // simple FNV-1a 32-bit
+      let h = 2166136261 >>> 0;
+      for(let i=0;i<str.length;i++){
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    /* =========================
+       Render dispatcher
+    ========================= */
+    function renderAll(){
+      updatePath();
+      updateHudBadges();
+
+      if(state.screen==="sector") drawSectorMap();
+      if(state.screen==="stars") drawStarMap();
+      if(state.screen==="system") drawSystem();
+      if(state.screen==="planet") drawPlanet();
+      if(state.screen==="region") drawRegion();
+      if(state.screen==="room") drawRoom();
+    }
+
+    /* =========================
+       Actions
+    ========================= */
+    function newGame(){
+      state.sector = {r:2,c:4}; // row3 col5
+      state.selectedStarId = null;
+      state.selectedStarName = "—";
+      state.systemObject = null;
+      state.planetRegion = null;
+      state.regionCell = null;
+      state.history.length=0;
+      state.future.length=0;
+
+      log("<b>Neues Spiel</b> gestartet. Initialisiere Sektorkarte…");
+      pushScreen("sector");
+    }
+
+    function enterSector(){
+      log(`Sektor betreten: <b>${state.sector.r+1}:${state.sector.c+1}</b> → Sternenkarte`);
+      // default select a star (first) for convenience
+      const data = ensureSectorData(state.sector.r,state.sector.c);
+      const s = data.stars[0];
+      state.selectedStarId = s?.id || null;
+      state.selectedStarName = s?.name || "—";
+      pushScreen("stars");
+    }
+
+    /* =========================
+       Event delegation (reliable click detection)
+    ========================= */
+    document.addEventListener("click", (ev)=>{
+      const a = ev.target.closest("[data-action]");
+      if(a){
+        const action = a.dataset.action;
+
+        if(action==="back") return back();
+        if(action==="forward") return forward();
+
+        if(action==="newGame") return newGame();
+        if(action==="enterSector") return enterSector();
+
+        if(action==="openSubmenu"){
+          return openSubmenu(a.dataset.sub);
+        }
+        if(action==="closeDialog"){
+          return closeDialog();
+        }
+
+        // main menu other actions
+        if(action==="load"){ log("Laden (Placeholder): Keine Savegames im Prototyp."); return; }
+        if(action==="saveFromMenu"){ log("Speichern (Placeholder): Demo speichert nicht persistent."); return; }
+        if(action==="credits"){ log("Credits: Prototype UI • Retro CRT • Press Start 2P."); return; }
+        if(action==="options"){ log("Optionen (Placeholder): CRT/Audio/Controls in Untermenü 'Speichern/Settings'."); return; }
+        if(action==="codex"){ log("Codex (Placeholder): Siehe Untermenü 'Bibliothek'."); return; }
+        if(action==="tutorial"){ log("Tutorial (Placeholder): Pfeile=Navigation • Klick=Interaktion."); return; }
+        if(action==="demo"){ log("Prototyp-Demo: Starte 'Neues Spiel' und navigiere durch die Screens."); return; }
+        if(action==="gallery"){ log("Galerie (Placeholder): Kein Asset-Pack im Standalone-Prototyp."); return; }
+        if(action==="quit"){ log("<span class='warn'>Beenden (Placeholder): Browser-Tab schließen.</span>"); return; }
+      }
+
+      // submenu item click
+      const li = ev.target.closest(".listItem");
+      if(li && state.screen==="submenu"){
+        const key = li.dataset.subitem;
+        const idx = Number(li.dataset.index);
+        const def = submenuDefs[key];
+        const it = def?.items?.()[idx];
+        log(`Detail: <b>${def?.title||"UNTERMENÜ"}</b> → <b>${it?.name||"Eintrag"}</b>`);
+        return;
+      }
+    }, {capture:true});
+
+    /* =========================
+       Canvas interactions
+    ========================= */
+    // Stars click
+    starsCanvas.addEventListener("click", (ev)=>{
+      if(state.screen!=="stars") return;
+      const hit = pickStarAt(starsCanvas, starHitIndex, ev);
+      if(!hit) return;
+      state.selectedStarId = hit.id;
+      state.selectedStarName = hit.name;
+      log(`Stern gewählt: <b>${hit.name}</b> → Sonnensystem`);
+      pushScreen("system");
+    });
+
+    // System click
+    systemCanvas.addEventListener("click", (ev)=>{
+      if(state.screen!=="system") return;
+      const hit = pickRectAt(systemCanvas, sysHit, ev);
+      if(!hit) return;
+
+      state.systemObject = {type: hit.type, r: hit.r, c: hit.c};
+      if(hit.type==="planet"){
+        log(`Planet betreten → Planetansicht`);
+        pushScreen("planet");
+      }else{
+        log(`${hit.type.toUpperCase()} ausgewählt → Regionansicht`);
+        // pick pseudo region for station/asteroid
+        state.planetRegion = {r:4, c:8};
+        pushScreen("region");
+      }
+    });
+
+    // Planet click
+    planetCanvas.addEventListener("click", (ev)=>{
+      if(state.screen!=="planet") return;
+      const hit = pickRectAt(planetCanvas, planetHit, ev);
+      if(!hit) return;
+      state.planetRegion = {r: hit.r, c: hit.c};
+      log(`Region gewählt: <b>R${hit.r+1}C${hit.c+1}</b> → Regionansicht`);
+      pushScreen("region");
+    });
+
+    // Region click
+    regionCanvas.addEventListener("click", (ev)=>{
+      if(state.screen!=="region") return;
+      const hit = pickRectAt(regionCanvas, regionHit, ev);
+      if(!hit) return;
+      state.regionCell = {r: hit.r, c: hit.c, type: hit.type};
+      log(`Feld: <b>${hit.type.toUpperCase()}</b> @ ${hit.r+1}:${hit.c+1} → Raumansicht`);
+      pushScreen("room");
+    });
+
+    // Room click
+    roomCanvas.addEventListener("click", (ev)=>{
+      if(state.screen!=="room") return;
+      const hit = pickRectAt(roomCanvas, roomHit, ev);
+      if(!hit) return;
+
+      if(hit.kind==="person"){
+        log(`Person: <b>${hit.name}</b> → Dialog`);
+        openDialog(hit.name,
+          ">> Verbindung hergestellt…\\n\\n" +
+          "Wir haben neue Signale aus dem Rand empfangen.\\n" +
+          "Soll ich die Sensoren auf ARC-Bögen kalibrieren?",
+          [
+            {label:"Ja", onPick:()=>{ log("Antwort: <b>Ja</b> (Kalibrierung läuft)."); closeDialog(); }},
+            {label:"Nein", onPick:()=>{ log("Antwort: <b>Nein</b> (später)."); closeDialog(); }},
+            {label:"Mehr Infos", onPick:()=>{ dialogText.textContent += "\\n\\n[DETAIL] Arc-Linien verbessern Routenvisualisierung zwischen Sternen."; }},
+          ]
+        );
+      }else{
+        log(`Objekt inspiziert: <b>${hit.name}</b> (kein Dialog).`);
+      }
+    });
+
+    /* =========================
+       Keyboard controls
+    ========================= */
+    window.addEventListener("keydown", (ev)=>{
+      const k = ev.key;
+
+      // ESC closes dialog or goes back
+      if(k==="Escape"){
+        if(dialogOverlay.classList.contains("visible")){
+          closeDialog();
+          return;
+        }
+        if(state.screen!=="main"){
+          back();
+          return;
+        }
+      }
+
+      // Sector navigation with wrap-around
+      if(state.screen==="sector"){
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter"].includes(k)){
+          ev.preventDefault();
+        }
+        if(k==="ArrowUp"){
+          state.sector.r = wrap(state.sector.r-1, sectorCfg.rows);
+          log(`Sektor: <b>${state.sector.r+1}:${state.sector.c+1}</b>`);
+          renderAll();
+        }else if(k==="ArrowDown"){
+          state.sector.r = wrap(state.sector.r+1, sectorCfg.rows);
+          log(`Sektor: <b>${state.sector.r+1}:${state.sector.c+1}</b>`);
+          renderAll();
+        }else if(k==="ArrowLeft"){
+          state.sector.c = wrap(state.sector.c-1, sectorCfg.cols);
+          log(`Sektor: <b>${state.sector.r+1}:${state.sector.c+1}</b>`);
+          renderAll();
+        }else if(k==="ArrowRight"){
+          state.sector.c = wrap(state.sector.c+1, sectorCfg.cols);
+          log(`Sektor: <b>${state.sector.r+1}:${state.sector.c+1}</b>`);
+          renderAll();
+        }else if(k==="Enter"){
+          enterSector();
+        }
+      }
+    });
+
+    /* =========================
+       Boot
+    ========================= */
+    function boot(){
+      buildMainMenu();
+      // default log
+      log("System online. CRT-Scanlines aktiv.");
+      log("Tipp: <b>Neues Spiel</b> → Sektorkarte → Sternenkarte → Sonnensystem → Planet → Region → Raumansicht.");
+
+      resizeBg();
+      window.addEventListener("resize", ()=>{
+        resizeBg();
+        renderAll();
+      });
+
+      requestAnimationFrame(loop);
+    }
+
+    boot();
+  })();
+  </script>
+</body>
+</html>
